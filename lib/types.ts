@@ -39,6 +39,7 @@ export type OrderItem = {
   quantity: number
   type: "buy" | "rent"
   rentalDuration?: number // in weeks, only for rent type
+  seller: string
 }
 
 export type Order = {
@@ -63,15 +64,27 @@ export type Rental = {
   dueDate: string // ISO string
   status: "Active" | "Overdue" | "Returned" | "Cancelled"
   seller: string
+  paymentMethod: "Credit Card" | "UPI" | "Wallet"
 }
 
 export type Notification = {
   id: string
   type: "order" | "rental" | "message" | "wishlist" | "seller"
-  icon: React.ReactNode
+  icon: React.ReactNode | null // Allow null for icon, as it's set in component
   title: string
   description: string
   date: string // ISO string
   link?: string
   read: boolean
+}
+
+export type WalletTransaction = {
+  id: string
+  type: "deposit" | "withdrawal" | "payment"
+  amount: number
+  date: string // ISO string
+  description: string
+  method?: string // e.g., "Credit Card", "UPI", "Wallet"
+  orderId?: string // Link to order if applicable
+  rentalId?: string // Link to rental if applicable
 }

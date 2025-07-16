@@ -8,20 +8,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
-import { ChevronLeft, CreditCard, Banknote, Wallet } from "lucide-react"
+import { ChevronLeft, CreditCard, Banknote, Wallet, ShoppingCart } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { useWallet } from "@/context/wallet-context"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
-import type { Order, Rental } from "@/lib/types"
-import { ShoppingCart } from "lucide-react"
+import type { Order } from "@/lib/types"
 
 export default function CheckoutPage() {
   const { cartItems, getCartTotal, clearCart } = useCart()
   const { balance, withdraw } = useWallet()
   const router = useRouter()
 
-  const [paymentMethod, setPaymentMethod] = useState("credit-card")
+  const [paymentMethod, setPaymentMethod] = useState("wallet")
   const [cardDetails, setCardDetails] = useState({
     cardNumber: "",
     cardName: "",
@@ -42,10 +41,10 @@ export default function CheckoutPage() {
 
   // Generate a simulated UPI QR code URL
   const upiQrCodeUrl = useMemo(() => {
-    const simulatedUpiId = "bookmarketplace@bank" // A placeholder UPI ID
+    const simulatedUpiId = "bookmarketplace@bank"
     const encodedAmount = encodeURIComponent(totalAmount.toFixed(2))
     const encodedName = encodeURIComponent("Book Marketplace")
-    const upiLink = `upi://pay?pa=${simulatedUpiId}&pn=${encodedName}&am=${encodedAmount}&cu=INR`
+    const upiLink = `upi://pay?pa=${simulatedUpiId}&pn=${encodedName}&am=${encodedAmount}&cu=USD`
     return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiLink)}`
   }, [totalAmount])
 
@@ -72,7 +71,6 @@ export default function CheckoutPage() {
     }
 
     if (paymentMethod === "upi" && !upiId && !isProcessingPayment) {
-      // Only require UPI ID if not using QR simulation
       toast({
         title: "Missing UPI ID",
         description: "Please enter your UPI ID or use the QR code.",
@@ -94,26 +92,36 @@ export default function CheckoutPage() {
     await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulate payment processing delay
 
     let paymentSuccessful = false
+    let orderId: string | undefined
+    const rentalIds: string[] = []
+
     if (paymentMethod === "wallet") {
-      paymentSuccessful = withdraw(totalAmount)
+      paymentSuccessful = withdraw(totalAmount, "Checkout Payment")
     } else {
       // Simulate payment success for Credit Card and UPI
       paymentSuccessful = true
+      toast({
+        title: "Payment Successful!",
+        description: `Payment of ${formatPrice(totalAmount)} completed successfully.`,
+      })
     }
 
     if (paymentSuccessful) {
-      // Simulate saving order/rental details
+      orderId = `ORD-${Date.now()}`
+
+      // Create order for all items
       const newOrder: Order = {
-        id: `ORD-${Date.now()}`,
+        id: orderId,
         items: cartItems.map((item) => ({
           bookId: item.id,
           title: item.title,
           author: item.author,
-          price: item.type === "buy" ? item.price : item.rentPrice!,
+          price: item.type === "buy" ? item.price : item.rentPrice! * item.rentalDuration!,
           image: item.image,
           quantity: item.quantity,
           type: item.type,
           rentalDuration: item.rentalDuration,
+          seller: item.seller,
         })),
         totalAmount: totalAmount,
         status: "Paid",
@@ -122,45 +130,50 @@ export default function CheckoutPage() {
         deliveryAddress: cartItems.some((item) => item.type === "buy") ? deliveryAddress : undefined,
       }
 
-      // Add to mock orders (in a real app, this would be a backend call)
+      // Save order to localStorage
       const existingOrders = JSON.parse(localStorage.getItem("mockOrders") || "[]")
       localStorage.setItem("mockOrders", JSON.stringify([...existingOrders, newOrder]))
 
-      // If there are rental items, simulate adding to rentals
-      cartItems
-        .filter((item) => item.type === "rent")
-        .forEach((item) => {
+      // Create rentals for rental items
+      const rentalItems = cartItems.filter((item) => item.type === "rent")
+      if (rentalItems.length > 0) {
+        const existingRentals = JSON.parse(localStorage.getItem("mockRentals") || "[]")
+        const newRentals = rentalItems.map((item) => {
           const rentalStartDate = new Date()
           const rentalDueDate = new Date()
-          rentalDueDate.setDate(rentalStartDate.getDate() + (item.rentalDuration || 7)) // Default 7 days if not specified
+          rentalDueDate.setDate(rentalStartDate.getDate() + (item.rentalDuration || 1) * 7)
+          const rentalId = `RENT-${Date.now()}-${item.id}`
+          rentalIds.push(rentalId)
 
-          const newRental: Rental = {
-            id: `RENT-${Date.now()}-${item.id}`,
+          return {
+            id: rentalId,
             bookId: item.id,
             title: item.title,
             author: item.author,
             image: item.image,
             rentalPrice: item.rentPrice!,
-            rentalDuration: item.rentalDuration || 7,
+            rentalDuration: item.rentalDuration || 1,
             startDate: rentalStartDate.toISOString(),
             dueDate: rentalDueDate.toISOString(),
             status: "Active",
-            seller: item.seller, // Assuming seller info is available
+            seller: item.seller,
+            paymentMethod: paymentMethod === "credit-card" ? "Credit Card" : paymentMethod === "upi" ? "UPI" : "Wallet",
           }
-          const existingRentals = JSON.parse(localStorage.getItem("mockRentals") || "[]")
-          localStorage.setItem("mockRentals", JSON.stringify([...existingRentals, newRental]))
         })
+        localStorage.setItem("mockRentals", JSON.stringify([...existingRentals, ...newRentals]))
+      }
 
       clearCart()
+
+      // Send notification
       toast({
-        title: "Payment Successful!",
-        description: "Your order has been placed.",
-        variant: "success",
+        title: "Order Placed Successfully!",
+        description: `Your order ${orderId} has been confirmed. You will receive email confirmation shortly.`,
       })
-      router.push(`/order-confirmation?orderId=${newOrder.id}`)
-    } else {
-      // Error toast already handled by withdraw function for wallet
+
+      router.push(`/order-confirmation?orderId=${orderId}`)
     }
+
     setIsProcessingPayment(false)
   }
 
@@ -219,6 +232,7 @@ export default function CheckoutPage() {
                         ? `${item.quantity} x ${formatPrice(item.price)}`
                         : `${item.quantity} x ${formatPrice(item.rentPrice!)}/week (${item.rentalDuration} weeks)`}
                     </p>
+                    <p className="text-xs text-muted-foreground">Seller: {item.seller}</p>
                   </div>
                   <span className="font-semibold">
                     {formatPrice(
@@ -282,6 +296,27 @@ export default function CheckoutPage() {
             <CardContent>
               <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid gap-4">
                 <Label
+                  htmlFor="wallet"
+                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="wallet" id="wallet" />
+                    <Wallet className="h-5 w-5" />
+                    <span>App Wallet ({formatPrice(balance)})</span>
+                  </div>
+                </Label>
+                {paymentMethod === "wallet" && balance < totalAmount && (
+                  <div className="p-4 border rounded-md bg-red-50 border-red-200">
+                    <p className="text-sm text-red-600">
+                      Insufficient wallet balance. Please add funds to your wallet or choose another payment method.
+                    </p>
+                    <Button asChild size="sm" className="mt-2 bg-amber-600 hover:bg-amber-700">
+                      <Link href="/wallet">Add Funds</Link>
+                    </Button>
+                  </div>
+                )}
+
+                <Label
                   htmlFor="credit-card"
                   className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
                 >
@@ -297,7 +332,7 @@ export default function CheckoutPage() {
                       <Label htmlFor="cardNumber">Card Number</Label>
                       <Input
                         id="cardNumber"
-                        placeholder="XXXX XXXX XXXX XXXX"
+                        placeholder="1234 5678 9012 3456"
                         value={cardDetails.cardNumber}
                         onChange={(e) => setCardDetails({ ...cardDetails, cardNumber: e.target.value })}
                         className="border-muted-foreground/20 focus:border-amber-500"
@@ -379,22 +414,11 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 )}
-
-                <Label
-                  htmlFor="wallet"
-                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="wallet" id="wallet" />
-                    <Wallet className="h-5 w-5" />
-                    <span>App Wallet ({formatPrice(balance)})</span>
-                  </div>
-                </Label>
               </RadioGroup>
-              {paymentMethod !== "upi" && ( // Only show the main pay button if not UPI (UPI has its own simulate button)
+              {paymentMethod !== "upi" && (
                 <Button
                   onClick={handlePayment}
-                  disabled={isProcessingPayment}
+                  disabled={isProcessingPayment || (paymentMethod === "wallet" && balance < totalAmount)}
                   className="w-full mt-6 bg-amber-600 hover:bg-amber-700 text-lg py-6"
                 >
                   {isProcessingPayment ? "Processing..." : `Pay ${formatPrice(totalAmount)}`}

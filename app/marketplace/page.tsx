@@ -13,105 +13,7 @@ import { Filter, ChevronDown, Star, Calendar, ShoppingCart } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { toast } from "@/components/ui/use-toast"
 import type { Book } from "@/lib/types"
-
-const mockBooks: Book[] = [
-  {
-    id: "1",
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    price: 12.99,
-    rentPrice: 3.0,
-    condition: "Used - Good",
-    genre: "Classic",
-    image: "/placeholder.jpg",
-    rating: 4.5,
-    reviews: 120,
-    seller: "Bookworm Haven",
-    location: "New York, NY",
-    delivery: true,
-    pickup: true,
-  },
-  {
-    id: "2",
-    title: "1984",
-    author: "George Orwell",
-    price: 10.5,
-    rentPrice: 2.5,
-    condition: "New",
-    genre: "Dystopian",
-    image: "/placeholder.jpg",
-    rating: 4.8,
-    reviews: 200,
-    seller: "Literary Finds",
-    location: "Brooklyn, NY",
-    delivery: false,
-    pickup: true,
-  },
-  {
-    id: "3",
-    title: "To Kill a Mockingbird",
-    author: "Harper Lee",
-    price: 9.75,
-    rentPrice: 2.0,
-    condition: "Used - Fair",
-    genre: "Classic",
-    image: "/placeholder.jpg",
-    rating: 4.6,
-    reviews: 150,
-    seller: "Page Turner",
-    location: "Queens, NY",
-    delivery: true,
-    pickup: false,
-  },
-  {
-    id: "4",
-    title: "The Hobbit",
-    author: "J.R.R. Tolkien",
-    price: 15.0,
-    rentPrice: 3.5,
-    condition: "Used - Like New",
-    genre: "Fantasy",
-    image: "/placeholder.jpg",
-    rating: 4.9,
-    reviews: 300,
-    seller: "Fantasy Realm",
-    location: "Manhattan, NY",
-    delivery: true,
-    pickup: true,
-  },
-  {
-    id: "5",
-    title: "Pride and Prejudice",
-    author: "Jane Austen",
-    price: 8.99,
-    rentPrice: 1.8,
-    condition: "Used - Good",
-    genre: "Romance",
-    image: "/placeholder.jpg",
-    rating: 4.4,
-    reviews: 90,
-    seller: "Classic Reads",
-    location: "Bronx, NY",
-    delivery: false,
-    pickup: true,
-  },
-  {
-    id: "6",
-    title: "The Catcher in the Rye",
-    author: "J.D. Salinger",
-    price: 11.25,
-    rentPrice: 2.7,
-    condition: "New",
-    genre: "Literary Fiction",
-    image: "/placeholder.jpg",
-    rating: 4.2,
-    reviews: 110,
-    seller: "Modern Classics",
-    location: "Staten Island, NY",
-    delivery: true,
-    pickup: true,
-  },
-]
+import { mockBooks } from "@/lib/mock-data" // Import mockBooks from mock-data.ts
 
 export default function MarketplacePage() {
   const [filters, setFilters] = useState({
@@ -154,7 +56,7 @@ export default function MarketplacePage() {
 
     const matchesGenre = filters.genre.length === 0 || filters.genre.includes(book.genre)
 
-    const matchesPrice = book.price >= filters.priceRange[0] && book.price <= filters.priceRange[1]
+    const matchesPrice = (book.price ?? 0) >= filters.priceRange[0] && (book.price ?? 0) <= filters.priceRange[1]
 
     const matchesCondition = filters.condition.length === 0 || filters.condition.includes(book.condition)
 
@@ -188,7 +90,7 @@ export default function MarketplacePage() {
       id: book.id,
       title: book.title,
       author: book.author,
-      price: book.price,
+      price: book.price ?? 0, // Provide a default if undefined
       rentPrice: book.rentPrice,
       image: book.image,
       condition: book.condition,

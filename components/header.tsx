@@ -134,13 +134,13 @@ export function Header() {
                       <Link href="/my-books">My Books</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/orders" className="flex items-center">
+                      <Link href="/my-orders" className="flex items-center">
                         <Package className="mr-2 h-4 w-4" />
                         Orders
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/rentals" className="flex items-center">
+                      <Link href="/my-rentals" className="flex items-center">
                         <BookText className="mr-2 h-4 w-4" />
                         My Rentals
                       </Link>
@@ -233,11 +233,17 @@ export function Header() {
                         <User className="w-5 h-5 mr-3" />
                         My Profile
                       </Link>
-                      <Link href="/orders" className="text-lg font-medium py-2 hover:text-amber-600 flex items-center">
+                      <Link
+                        href="/my-orders"
+                        className="text-lg font-medium py-2 hover:text-amber-600 flex items-center"
+                      >
                         <Package className="w-5 h-5 mr-3" />
                         Orders
                       </Link>
-                      <Link href="/rentals" className="text-lg font-medium py-2 hover:text-amber-600 flex items-center">
+                      <Link
+                        href="/my-rentals"
+                        className="text-lg font-medium py-2 hover:text-amber-600 flex items-center"
+                      >
                         <BookText className="w-5 h-5 mr-3" />
                         My Rentals
                       </Link>

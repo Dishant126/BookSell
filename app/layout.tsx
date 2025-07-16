@@ -5,14 +5,13 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from "@/components/header"
 import { Toaster } from "@/components/ui/toaster"
-import { CartProvider } from "@/context/cart-context"
-import { WalletProvider } from "@/context/wallet-context"
+import { Providers } from "@/components/providers"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "BookHub - Your Online Book Marketplace",
-  description: "Buy, sell, and rent books with ease. Discover new reads and connect with local book lovers.",
+  title: "BookHub - Your Local Book Marketplace",
+  description: "Discover, buy, sell, and rent books in your community.",
     generator: 'v0.dev'
 }
 
@@ -24,15 +23,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <CartProvider>
-            <WalletProvider>
-              <Header />
-              <main>{children}</main>
-              <Toaster />
-            </WalletProvider>
-          </CartProvider>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <Header />
+            <main>{children}</main>
+            <Toaster />
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )
