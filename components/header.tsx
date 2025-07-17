@@ -30,6 +30,7 @@ import { useTheme } from "next-themes"
 import { WishlistModal } from "./wishlist-modal"
 import { NotificationsModal } from "./notifications-modal"
 import { useCart } from "@/context/cart-context"
+import { useChat } from "@/context/chat-context"
 
 export function Header() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -37,6 +38,7 @@ export function Header() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const { getCartItemCount } = useCart()
+  const { unreadCount } = useChat()
 
   const cartItemCount = getCartItemCount()
 
@@ -89,9 +91,15 @@ export function Header() {
                   </Link>
                 </Button>
 
-                <Button variant="ghost" size="icon" className="relative">
-                  <MessageCircle className="h-5 w-5" />
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-red-500">3</Badge>
+                <Button variant="ghost" size="icon" className="relative" asChild>
+                  <Link href="/chat">
+                    <MessageCircle className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-red-500">
+                        {unreadCount}
+                      </Badge>
+                    )}
+                  </Link>
                 </Button>
 
                 <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
@@ -211,6 +219,17 @@ export function Header() {
                         <Users className="w-5 h-5 mr-3" />
                         Community
                       </Link>
+                      <Button
+                        variant="ghost"
+                        className="justify-start text-lg font-medium py-2 hover:text-amber-600 h-auto"
+                        asChild
+                      >
+                        <Link href="/chat">
+                          <MessageCircle className="w-5 h-5 mr-3" />
+                          Messages
+                          {unreadCount > 0 && <Badge className="ml-auto bg-red-500">{unreadCount}</Badge>}
+                        </Link>
+                      </Button>
                       <Button
                         variant="ghost"
                         className="justify-start text-lg font-medium py-2 hover:text-amber-600 h-auto"
